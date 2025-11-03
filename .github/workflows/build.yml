@@ -1,31 +1,44 @@
-name: Build and Push Docker Image
+name: Build & Push Docker Image
 
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+  repository_dispatch:
+    types: [ timetracking-updated ]
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Docker repo
+      - name: Checkout timetracking-docker
         uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
+      - name: Clone timetracking (private repo)
+        run: git clone https://${{ secrets.PRIVATE_REPO_TOKEN }}@github.com/c0rrre/timetracking.git ./timetracking
+
+      - name: Bump version
+        id: version
+        uses: phips28/gh-action-bump-version@v10
+        with:
+          tag-prefix: "v"
+          default: patch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHCR_PAT }}
+
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
-      - name: Build Docker image
+      - name: Build and push Docker image
         run: |
-          docker build \
-            --build-arg GITHUB_TOKEN=${{ secrets.PRIVATE_REPO_TOKEN }} \
-            -t ghcr.io/${{ github.repository_owner }}/timetracking-docker:latest .
-
-      - name: Push image
-        run: |
-          docker push ghcr.io/${{ github.repository_owner }}/timetracking-docker:latest
+          VERSION=${{ steps.version.outputs.newTag }}
+          IMAGE=ghcr.io/${{ github.repository_owner }}/timetracking-docker
+          docker build -t $IMAGE:${VERSION} -t $IMAGE:latest ./timetracking
+          docker push $IMAGE:${VERSION}
+          docker push $IMAGE:latest
