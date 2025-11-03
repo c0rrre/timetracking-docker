@@ -1,5 +1,5 @@
-# Node.js Basisimage
-FROM node:20-alpine
+# === Build-Stage ===
+FROM node:20-alpine AS build
 
 # Argument für GitHub Token
 ARG GITHUB_TOKEN
@@ -7,18 +7,35 @@ ARG GITHUB_TOKEN
 # Arbeitsverzeichnis
 WORKDIR /app
 
-# Git installieren
+# Git installieren und Projekt klonen
 RUN apk add --no-cache git
-
-# Privates Repo klonen
 RUN git clone https://${GITHUB_TOKEN}@github.com/c0rrre/timetracking.git . && \
     rm -rf .git
 
-# Abhängigkeiten installieren
-RUN npm install
+# Abhängigkeiten installieren und Build erzeugen
+RUN npm ci && npm run build
 
-# Port öffnen (z. B. Vite)
-EXPOSE 8080
+# === Runtime-Stage ===
+FROM nginx:alpine
 
-# Startbefehl
-CMD ["npm", "run", "dev"]
+# Statische Dateien aus dem Build übernehmen
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Nginx-Konfiguration anpassen (optional)
+# Falls du z. B. React Router nutzt, damit 404 -> index.html geht:
+RUN echo '\
+server {\n\
+    listen 80;\n\
+    server_name _;\n\
+    root /usr/share/nginx/html;\n\
+    index index.html;\n\
+    location / {\n\
+        try_files $uri /index.html;\n\
+    }\n\
+}\n' > /etc/nginx/conf.d/default.conf
+
+# Port öffnen
+EXPOSE 80
+
+# Container-Start
+CMD ["nginx", "-g", "daemon off;"]
