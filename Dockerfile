@@ -18,7 +18,7 @@ RUN git clone https://${GITHUB_TOKEN}@github.com/c0rrre/timetracking.git . && \
 RUN npm install
 
 # Port öffnen (z. B. Vite)
-EXPOSE 5173
+EXPOSE 8080
 
 # Startbefehl
 CMD ["npm", "run", "dev"]
