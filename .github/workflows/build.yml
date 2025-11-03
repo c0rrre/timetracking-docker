@@ -28,4 +28,4 @@ jobs:
 
       - name: Push image
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/timetracking:latest
+          docker push ghcr.io/${{ github.repository_owner }}/timetracking-docker:latest
