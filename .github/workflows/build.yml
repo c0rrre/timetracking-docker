@@ -24,7 +24,7 @@ jobs:
         run: |
           docker build \
             --build-arg GITHUB_TOKEN=${{ secrets.PRIVATE_REPO_TOKEN }} \
-            -t ghcr.io/${{ github.repository_owner }}/timetracking:latest .
+            -t ghcr.io/${{ github.repository_owner }}/timetracking-docker:latest .
 
       - name: Push image
         run: |
